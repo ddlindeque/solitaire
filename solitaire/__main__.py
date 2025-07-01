@@ -3,7 +3,7 @@ import copy
 import time
 
 from solitaire.board import Board, MAX_MOVES
-from solitaire.player import AIPlayer, HumanPlayer, Player, SimplePlayer
+from solitaire.player import AIPlayer, HumanPlayer, Player
 from solitaire.view import TextView
 
 
@@ -77,8 +77,7 @@ def run_human_game(args):
     """Sets up and runs a standard game for a human player."""
     board = Board()
     board.setup()
-    #player = HumanPlayer()
-    player = SimplePlayer()
+    player = HumanPlayer()
     view = TextView()
     play_game(board, player, view, interactive=True)
 

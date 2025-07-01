@@ -101,6 +101,23 @@ class TableauToFoundation(Move):
 
 
 @dataclass(frozen=True)
+class FoundationToTableau(Move):
+    """Move the top card of a foundation to a tableau."""
+    source_foundation_index: int
+    dest_tableau_index: int
+    card: "Card"
+
+    def execute(self, board: "Board") -> None:
+        source_pile = board.foundations[self.source_foundation_index]
+        dest_pile = board.tableau_piles[self.dest_tableau_index]
+        card = source_pile.pop_card()
+        dest_pile.add_card(card)
+
+    def __str__(self) -> str:
+        return f"Move {self.card} from Foundation {self.card.suit.value} to Tableau {self.dest_tableau_index + 1}"
+
+
+@dataclass(frozen=True)
 class TableauToTableau(Move):
     """Move one or more cards from one tableau to another."""
     source_tableau_index: int

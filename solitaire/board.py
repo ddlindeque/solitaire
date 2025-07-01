@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, List, Optional
 from solitaire.card import Card, Rank, Suit
 from solitaire.move import (
     DrawFromStock,
+    FoundationToTableau,
     Move,
     ResetStock,
     TableauToFoundation,
@@ -255,12 +256,14 @@ class Board:
             foundation = self.foundations[target_foundation_index]
             if foundation.can_add_card(top_waste_card):
                 legal_moves.append(
+                    # from and to states are not isomorphic
                     WasteToFoundation(foundation_index=target_foundation_index, card=top_waste_card)
                 )
             # Waste to Tableau
             for i, tableau in enumerate(self.tableau_piles):
                 if tableau.can_add_card(top_waste_card):
                     legal_moves.append(
+                        # from and to states are not isomorphic
                         WasteToTableau(tableau_index=i, card=top_waste_card)
                     )
 
@@ -305,6 +308,21 @@ class Board:
                                 source_tableau_index=i, dest_tableau_index=j, num_cards=num_cards, card=card_in_stack
                             )
                         )
+
+        # 4. Moves from Foundation piles
+        for i, source_pile in enumerate(self.foundations):
+            card_to_move = source_pile.top_card
+            if not card_to_move:
+                continue
+
+            # Foundation to Tableau
+            for j, dest_pile in enumerate(self.tableau_piles):
+                if dest_pile.can_add_card(card_to_move):
+                    legal_moves.append(
+                        FoundationToTableau(
+                            source_foundation_index=i, dest_tableau_index=j, card=card_to_move
+                        )
+                    )
         return legal_moves
 
     def execute_move(self, move: Move) -> None:

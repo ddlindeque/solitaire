@@ -62,14 +62,3 @@ class HumanPlayer(Player):
         """Human player needs a pause to see the move."""
         super().notify_automatic_move(move)
         time.sleep(0.75)
-
-class SimplePlayer(Player):
-    """A non-interactive player that always selects the first available legal move."""
-    def select_move(self, board: Board, legal_moves: list[Move]) -> Optional[Move]:
-        """
-        Always selects the first move from the list of legal moves.
-        """
-        # This player demonstrates automatic play, so we print the move and pause.
-        selected_move = legal_moves[0]
-        print(f"\nSimplePlayer selects: {selected_move}")
-        return selected_move
