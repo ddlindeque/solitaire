@@ -26,6 +26,8 @@ Yes, it operates like **SET**. Move *morphisms* are exactly like a functions ope
 * **Composition**: A move can always be followed by another legal move (for that state/object), thus we can *compose* two legal moves.
 * **Associativity**: This is like **SET**, so associativity holds (homework excercise). A legal move can always follow another legal move, which can then always follow another legal move. Whether I do the first two moves as a 'unit', and then the third, or the first, then the second and third as a 'unit', doesn't matter. The concept of a 'unit' doesn't really exist.
 
+Let's call this category *SOL*.
+
 ### Identifying isomorphisms
 
 An *isomophism* can be *undone* (i.e.: go back to the previous state/object) by one or more (composition) of other moves/morphisms.
@@ -85,6 +87,8 @@ We can define a functor that maps from the game state (objects) to this new cate
 `F(TableauToFoundationAndReveal) = tf`
 `F(TableauToTableauAndReveal) = tt`
 
+Let's call this category *SOL2*.
+
 The challange is to find this category, i.e.: from a board state, find the different morphisms legal on this state.
 
 
@@ -92,6 +96,7 @@ The challange is to find this category, i.e.: from a board state, find the diffe
 
 ### Rate the board
 
+* We rate boards based on *SOL2*.
 * We get a vectorisation for the board based on making progress, i.e.: all *isomophic* boards are embedded the same, only *morphisms* leading to new *non-isomophic* boards are considered as new embeddings.
 * Here we just want to be able to rate the board current state, and give an estimate of how probable it will be to solve the board from here.
 * We rate the board based on the ratings of all moves that will lead to non-isomophic states. We can experiment, but I think we just add the numbers together. For instance, the number of moves I can make to win, when I'm in a winning state, is zero. The number of winning moves I can make from a state one move away from the winning state, is zero + the number of moves leading to the winning state. We can use this to train the network to estimate the number of moves each state will require/offer to win. The more states offered, the more likely it can win the game. **We need to consider how it can deal with states less likely according to this, but more likely to win.**
