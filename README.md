@@ -6,33 +6,34 @@
 
 ## Game state analysys
 
-I belief this game board state forms a category with board state as a node, and moves as edges.
+I belief this game board state forms a category with board state as *objects*, and moves as *morphisms*. We do not have a *terminal* object, since we can terminate in *win* (1 object) or *lost* (many objects). We also do not have an *initial* object, since we start with a random state of cards (unless we introdue a *shuffle* move).
 
 We have the following kinds of moves (morphisms)
 
 *   **`DoNothing`**: Does nothing. We will not actually implement this.
 *   **`DrawFromStock`**: Draws a card from the stock to the waste pile.
 *   **`ResetStock`**: Resets the stock from the waste pile when the stock is empty.
-*   **`WasteToFoundation`**: Moves the top card of the waste to a foundation pile.
-*   **`WasteToTableau`**: Moves the top card of the waste to a tableau pile.
-*   **`TableauToFoundation`**: Moves the top card of a tableau to a foundation pile.
+*   **`WasteToFoundation`**: Moves the top card of the waste to a foundation pile. This move is not reversable.
+*   **`WasteToTableau`**: Moves the top card of the waste to a tableau pile. This move is not reversable.
+*   **`TableauToFoundation`**: Moves the top card of a tableau to a foundation pile without revealing a new card.
+*   **`TableauToFoundationAndReveal`**: Moves the top card of a tableau to a foundation pile, revealing a new card. This move is not reversable.
 *   **`FoundationToTableau`**: Moves a card from a foundation pile back to a tableau pile.
-*   **`TableauToTableau`**: Moves one or more cards from one tableau pile to another.
+*   **`TableauToTableau`**: Moves one or more cards from one tableau pile to another without revealing a new card.
+*   **`TableauToTableauAndReveal`**: Moves one or more cards from one tableau pile to another, revealing a new card. This move is not reversable.
 
 ### Is this a category?
 
-Yes, it operates like **SET**. Move *morphisms* are exactly like a function operating on a state, which is the state of the board.
+Yes, it operates like **SET**. Move *morphisms* are exactly like a functions operating on a state, which is the state of the board.
+* **Identity**: The *DoNothing* move. For now, we will ignore this morphism going forward, since it does nothing.
+* **Composition**: A move can always be followed by another legal move (for that state/object), thus we can *compose* two legal moves.
+* **Associativity**: This is like **SET**, so associativity holds (homework excercise). A legal move can always follow another legal move, which can then always follow another legal move. Whether I do the first two moves as a 'unit', and then the third, or the first, then the second and third as a 'unit', doesn't matter. The concept of a 'unit' doesn't really exist.
 
 ### Identifying isomorphisms
 
-An *isomophism* can be *undone* (i.e.: go back to the previous state) by one or more (composition) of other moves (morphisms).
+An *isomophism* can be *undone* (i.e.: go back to the previous state/object) by one or more (composition) of other moves/morphisms.
 
-Note that you can never move a card from the tableau or foundation piles to the stock or waste piles, but you can move cards from the waste pile to both the tableau and foundation piles. You can also move cards between the stock and waste piles (under certain rules). This means that the number of cards in the stock plus waste piles, will always only stay the same or decrease.
+Note that you can never move a card from the tableau or foundation piles to the stock or waste piles, but you can move cards from the waste pile to both the tableau and foundation piles. You can also move cards between the stock and waste piles (under certain rules). This means that the number of cards in the stock plus waste piles, will always only stay the same or decrease. Also, once a card was revealed, it cannot be 'unrevealed' again. So, no 'undo' can exist after revealing a new card, so the number of unrevealed tableau cards will always stay the same or decrease.
 
-Also, once a card was revealed, it cannot be 'unrevealed' again. So, no 'undo' can exist after revealing a new card.
-
-*   **`DoNothing`**: Does nothing. We will not actually implement this.
-        * Isomorphic with itself. It's the *identity*
 *   **`DrawFromStock`**: Draws a card from the stock to the waste pile.
         * We can reach our current state again, by **`DrawFromStock`**, then **`ResetStock`**, and **`DrawFromStock`** until we reach this state.
         * Thus **`DrawFromStock`** ∘ **`DrawFromStock`**^n ∘ **`ResetStock`** ∘ **`DrawFromStock`**^m = **`DrawFromStock`**
@@ -45,44 +46,38 @@ Also, once a card was revealed, it cannot be 'unrevealed' again. So, no 'undo' c
         * The waste+stock pile has reduced in size, and can never increase again, so this cannot have an isomorhism
 *   **`WasteToTableau`**: Moves the top card of the waste to a tableau pile.
         * The waste+stock pile has reduced in size, and can never increase again, so this cannot have an isomorhism
-*   **`TableauToFoundation`**: Moves the top card of a tableau to a foundation pile.
-        * This can always be undone when the move doesn't reveal a new card.
+*   **`TableauToFoundation`**: Moves the top card of a tableau to a foundation pile without revealing a new card.
+        * This is an isomorphism as it can be undone by a `FoundationToTableau` move.
+*   **`TableauToFoundationAndReveal`**: Moves the top card of a tableau to a foundation pile, revealing a new card.
+        * The number of reveal cards in the tableau's has been reduced, and never be increased, so we cannot reach this state/object again by any legal move/morphish, so this cannot have an isomorhism.
 *   **`FoundationToTableau`**: Moves a card from a foundation pile back to a tableau pile.
         * This is the inverse of a `TableauToFoundation` move and is always an isomorphism as it never reveals a card.
-*   **`TableauToTableau`**: Moves one or more cards from one tableau pile to another.
-        * This can always be undone when the move doesn't reveal a new card.
+*   **`TableauToTableau`**: Moves one or more cards from one tableau pile to another without revealing a new card.
+        * This is an isomorphism as it can be undone by moving the same stack back.
+*   **`TableauToTableauAndReveal`**: Moves one or more cards from one tableau pile to another, revealing a new card.
+        * This is not an isomorphism as a card is revealed, which can never be 'unrevealed'.
 
 #### Conclusion
 
-* All states with count(stock+waste) = count(stock'+waste'), and count(unrevealed) = count(unrevealed'), are isomorphic.
+* All objects with count(stock+waste) = count(stock'+waste'), and count(unrevealed) = count(unrevealed'), are isomorphic.
     * **`DrawFromStock`**
     * **`ResetStock`**
-    * **`TableauToFoundation`** when not revealing a new card
+    * **`TableauToFoundation`**
     * **`FoundationToTableau`**
-    * **`TableauToTableau`** when not revealing a new card
-* All states with count(stock+waste) != count(stock'+waste'), or count(unrevealed) != count(unrevealed'), are not isomorphic.
+    * **`TableauToTableau`**
+* All objects with count(stock+waste) != count(stock'+waste'), or count(unrevealed) != count(unrevealed'), are not isomorphic. Morphishms between these objects are the only ones making progress in the game.
     * **`WasteToFoundation`**
     * **`WasteToTableau`**
-    * **`TableauToFoundation`** when revealing a new card
-    * **`TableauToTableau`** when revealing a new card
-
-### Vectorising game state
-
-* Given we have a consistent *start condition*:
-
-* A card can be vectorised as a 2 dimensional array, one for the suite and one for the rank. 2 of hearts are close to 2 of clubs, and 2 of hearts are also close to 3 of hearts. A zero in both places indicate `no card`.
-
-* Since all states with the same number of cards stock+waste and same number of unrevealed cards are isomorphic, we can conclude:
-    * The cards in the waste and stock piles can be merged into a single set, and the order doesn't matter. We can have a maximum of 52 - 1+2+3+4+5+6+7 = 24 cards in these piles. So, we'll have an input to the network of 24 positions for these cards. They'll be ordered to remove bias. How?
-* The number of unrevealed cards are just an integer number. Since all states not revealing a new card are isomorphic, we just need the number of unrevealed cards.
-
-This vectorisation can be used for understanding the state of the game up to isomorphism. This is useful for rating the board.
+    * **`TableauToFoundationAndReveal`**
+    * **`TableauToTableauAndReveal`**
 
 ## Training
 
 ### Rate the board
 
-* We get a vectorisation for the board as described above.
+* We get a vectorisation for the board based on making progress, i.e.: all *isomophic* boards are embedded the same, only *morphisms* leading to new *non-isomophic* boards are considered as new embeddings.
 * Here we just want to be able to rate the board current state, and give an estimate of how probable it will be to solve the board from here.
-* This means we can test moves and get an indication of how good a move is.
-* We start by using a board with one unrevealed card. This is easy to find the number of steps to solve this (1).
+
+
+### Select a move
+

@@ -13,6 +13,10 @@ if TYPE_CHECKING:
     from .board import Board
     from .card import Card
 
+# ANSI color codes for terminal output
+COLOR_RED = "\033[91m"
+COLOR_RESET = "\033[0m"
+
 
 class Move(ABC):
     """Abstract base class for a game move."""
@@ -65,7 +69,12 @@ class WasteToFoundation(Move):
         board.foundations[self.foundation_index].add_card(card)
 
     def __str__(self) -> str:
-        return f"Move {self.card} to Foundation {self.card.suit.value}"
+        card_str = str(self.card)
+        foundation_suit_str = self.card.suit.value
+        if self.card.suit.color == "red":
+            card_str = f"{COLOR_RED}{card_str}{COLOR_RESET}"
+            foundation_suit_str = f"{COLOR_RED}{foundation_suit_str}{COLOR_RESET}"
+        return f"Move {card_str} from Waste to Foundation {foundation_suit_str}"
 
 
 @dataclass(frozen=True)
@@ -79,12 +88,36 @@ class WasteToTableau(Move):
         board.tableau_piles[self.tableau_index].add_card(card)
 
     def __str__(self) -> str:
-        return f"Move {self.card} from Waste to Tableau {self.tableau_index + 1}"
+        card_str = str(self.card)
+        if self.card.suit.color == "red":
+            card_str = f"{COLOR_RED}{card_str}{COLOR_RESET}"
+        return f"Move {card_str} from Waste to Tableau {self.tableau_index + 1}"
 
 
 @dataclass(frozen=True)
 class TableauToFoundation(Move):
-    """Move the top card of a tableau to a foundation."""
+    """Move the top card of a tableau to a foundation without revealing a new card."""
+    source_tableau_index: int
+    foundation_index: int
+    card: "Card"
+
+    def execute(self, board: "Board") -> None:
+        source_pile = board.tableau_piles[self.source_tableau_index]
+        board.foundations[self.foundation_index].add_card(source_pile.pop_card())
+        # This move does not flip a card.
+
+    def __str__(self) -> str:
+        card_str = str(self.card)
+        foundation_suit_str = self.card.suit.value
+        if self.card.suit.color == "red":
+            card_str = f"{COLOR_RED}{card_str}{COLOR_RESET}"
+            foundation_suit_str = f"{COLOR_RED}{foundation_suit_str}{COLOR_RESET}"
+        return f"Move {card_str} from Tableau {self.source_tableau_index + 1} to Foundation {foundation_suit_str}"
+
+
+@dataclass(frozen=True)
+class TableauToFoundationAndReveal(Move):
+    """Move the top card of a tableau to a foundation, revealing a new card."""
     source_tableau_index: int
     foundation_index: int
     card: "Card"
@@ -93,11 +126,16 @@ class TableauToFoundation(Move):
         source_pile = board.tableau_piles[self.source_tableau_index]
         card = source_pile.pop_card()
         board.foundations[self.foundation_index].add_card(card)
-        # After moving, try to flip the new top card of the source tableau
+        # After moving, flip the new top card of the source tableau
         source_pile.flip_top_card()
 
     def __str__(self) -> str:
-        return f"Move {self.card} to Foundation {self.card.suit.value}"
+        card_str = str(self.card)
+        foundation_suit_str = self.card.suit.value
+        if self.card.suit.color == "red":
+            card_str = f"{COLOR_RED}{card_str}{COLOR_RESET}"
+            foundation_suit_str = f"{COLOR_RED}{foundation_suit_str}{COLOR_RESET}"
+        return f"Move {card_str} from Tableau {self.source_tableau_index + 1} to Foundation {foundation_suit_str} (reveals card)"
 
 
 @dataclass(frozen=True)
@@ -114,12 +152,46 @@ class FoundationToTableau(Move):
         dest_pile.add_card(card)
 
     def __str__(self) -> str:
-        return f"Move {self.card} from Foundation {self.card.suit.value} to Tableau {self.dest_tableau_index + 1}"
+        card_str = str(self.card)
+        foundation_suit_str = self.card.suit.value
+        if self.card.suit.color == "red":
+            card_str = f"{COLOR_RED}{card_str}{COLOR_RESET}"
+            foundation_suit_str = f"{COLOR_RED}{foundation_suit_str}{COLOR_RESET}"
+        return f"Move {card_str} from Foundation {foundation_suit_str} to Tableau {self.dest_tableau_index + 1}"
 
 
 @dataclass(frozen=True)
 class TableauToTableau(Move):
-    """Move one or more cards from one tableau to another."""
+    """Move one or more cards from one tableau to another without revealing a new card."""
+    source_tableau_index: int
+    dest_tableau_index: int
+    num_cards: int
+    card: "Card"  # The top card of the stack being moved
+
+    def execute(self, board: "Board") -> None:
+        source_pile = board.tableau_piles[self.source_tableau_index]
+        dest_pile = board.tableau_piles[self.dest_tableau_index]
+
+        # Remove the stack from the source and add it to the destination
+        cards_to_move = source_pile.pop_stack(self.num_cards)
+        for card in cards_to_move:
+            dest_pile.add_card(card)
+        # This move does not flip a card.
+
+    def __str__(self) -> str:
+        plural = "s" if self.num_cards > 1 else ""
+        card_str = str(self.card)
+        if self.card.suit.color == "red":
+            card_str = f"{COLOR_RED}{card_str}{COLOR_RESET}"
+        return (
+            f"Move {self.num_cards} card{plural} (starting with {card_str}) from "
+            f"Tableau {self.source_tableau_index + 1} to Tableau {self.dest_tableau_index + 1}"
+        )
+
+
+@dataclass(frozen=True)
+class TableauToTableauAndReveal(Move):
+    """Move one or more cards from one tableau to another, revealing a new card."""
     source_tableau_index: int
     dest_tableau_index: int
     num_cards: int
@@ -134,12 +206,15 @@ class TableauToTableau(Move):
         for card in cards_to_move:
             dest_pile.add_card(card)
 
-        # After moving, try to flip the new top card of the source tableau
+        # After moving, flip the new top card of the source tableau
         source_pile.flip_top_card()
 
     def __str__(self) -> str:
         plural = "s" if self.num_cards > 1 else ""
+        card_str = str(self.card)
+        if self.card.suit.color == "red":
+            card_str = f"{COLOR_RED}{card_str}{COLOR_RESET}"
         return (
-            f"Move {self.num_cards} card{plural} (starting with {self.card}) from "
-            f"Tableau {self.source_tableau_index + 1} to Tableau {self.dest_tableau_index + 1}"
+            f"Move {self.num_cards} card{plural} (starting with {card_str}) from "
+            f"Tableau {self.source_tableau_index + 1} to Tableau {self.dest_tableau_index + 1} (reveals card)"
         )

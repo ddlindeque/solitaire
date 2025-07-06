@@ -8,7 +8,9 @@ from solitaire.move import (
     FoundationToTableau,
     Move,
     ResetStock,
+    TableauToFoundationAndReveal,
     TableauToFoundation,
+    TableauToTableauAndReveal,
     TableauToTableau,
     WasteToFoundation,
     WasteToTableau,
@@ -275,39 +277,66 @@ class Board:
                 target_foundation_index = self.foundation_suits.index(top_tableau_card.suit)
                 foundation = self.foundations[target_foundation_index]
                 if foundation.can_add_card(top_tableau_card):
-                    legal_moves.append(
-                        TableauToFoundation(
-                            source_tableau_index=i, foundation_index=target_foundation_index, card=top_tableau_card
-                        )
+                    # Check if this move will reveal a new card. This happens if the
+                    # source pile has face-down cards and only one face-up card.
+                    will_reveal_card = (
+                        len(source_pile.face_up_cards) == 1
+                        and source_pile.face_down_count > 0
                     )
+                    if will_reveal_card:
+                        legal_moves.append(
+                            TableauToFoundationAndReveal(
+                                source_tableau_index=i,
+                                foundation_index=target_foundation_index,
+                                card=top_tableau_card,
+                            )
+                        )
+                    else:
+                        legal_moves.append(
+                            TableauToFoundation(
+                                source_tableau_index=i,
+                                foundation_index=target_foundation_index,
+                                card=top_tableau_card,
+                            )
+                        )
 
             # 3b. Tableau to Tableau (stacks of cards can move)
             for k, card_in_stack in enumerate(source_pile.face_up_cards):
-                king_to_empty_move_found = False
+                num_cards = len(source_pile.face_up_cards) - k
+                # A move reveals a card if we move all face-up cards and there are face-down cards underneath.
+                will_reveal_card = (k == 0) and (source_pile.face_down_count > 0)
+
+                # Optimization: Only generate one move for a given King stack to any empty pile.
+                # This prevents creating many pointless, equivalent moves.
+                king_to_empty_move_generated = False
+
                 for j, dest_pile in enumerate(self.tableau_piles):
                     if i == j: continue # Cannot move to the same pile
 
                     if dest_pile.can_add_card(card_in_stack):
-                        # Prevent pointless moves: moving a King to an empty tableau
-                        # if it doesn't reveal a new card in the source pile.
-                        # Also, only generate one move for a given King stack to an empty pile.
+                        # Further optimization: Prevent moving a King stack to an empty tableau
+                        # if it doesn't reveal a new card. This is a common type of
+                        # pointless, easily reversible move that clutters the search space.
                         is_king_to_empty = card_in_stack.rank == Rank.KING and not dest_pile
                         if is_king_to_empty:
-                            if king_to_empty_move_found:
-                                continue  # Already found a move for this King stack to an empty pile.
+                            if not will_reveal_card:
+                                continue # Pointless move.
+                            if king_to_empty_move_generated:
+                                continue # Already made a move for this King to an empty pile.
+                            king_to_empty_move_generated = True
 
-                            # A stack moved to an empty pile must start with a King.
-                            # The move is only useful if it reveals a face-down card.
-                            if source_pile.face_down_count == 0:
-                                continue  # This is a pointless move, so skip it.
-                            king_to_empty_move_found = True
-
-                        num_cards = len(source_pile.face_up_cards) - k
-                        legal_moves.append(
-                            TableauToTableau(
-                                source_tableau_index=i, dest_tableau_index=j, num_cards=num_cards, card=card_in_stack
+                        if will_reveal_card:
+                            legal_moves.append(
+                                TableauToTableauAndReveal(
+                                    source_tableau_index=i, dest_tableau_index=j, num_cards=num_cards, card=card_in_stack
+                                )
                             )
-                        )
+                        else:
+                            legal_moves.append(
+                                TableauToTableau(
+                                    source_tableau_index=i, dest_tableau_index=j, num_cards=num_cards, card=card_in_stack
+                                )
+                            )
 
         # 4. Moves from Foundation piles
         for i, source_pile in enumerate(self.foundations):
