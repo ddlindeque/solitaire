@@ -2,8 +2,6 @@
 
 # Solitaire
 
-## Gameplay
-
 ## Game state analysys
 
 I belief this game board state forms a category with board state as *objects*, and moves as *morphisms*. We do not have a *terminal* object, since we can terminate in *win* (1 object) or *lost* (many objects). We also do not have an *initial* object, since we start with a random state of cards (unless we introdue a *shuffle* move).
@@ -70,6 +68,25 @@ Note that you can never move a card from the tableau or foundation piles to the 
     * **`WasteToTableau`**
     * **`TableauToFoundationAndReveal`**
     * **`TableauToTableauAndReveal`**
+
+#### Functor
+
+We can define a functor that maps from the game state (objects) to this new category where all isompohic objects are one object, and only morphisms which 'makes progress', exist in the category. We can define it as follows:
+
+`F(DrawFromStock) = id`
+`F(ResetStock) = id`
+`F(TableauToFoundation) = id`
+`F(FoundationToTableau) = id`
+`F(TableauToTableau) = id`
+
+`F(WasteToFoundation) = wf`
+`F(WasteToTableau) = wt`
+
+`F(TableauToFoundationAndReveal) = tf`
+`F(TableauToTableauAndReveal) = tt`
+
+The challange is to find this category, i.e.: from a board state, find the different morphisms legal on this state.
+
 
 ## Training
 
