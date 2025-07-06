@@ -77,6 +77,7 @@ Note that you can never move a card from the tableau or foundation piles to the 
 
 * We get a vectorisation for the board based on making progress, i.e.: all *isomophic* boards are embedded the same, only *morphisms* leading to new *non-isomophic* boards are considered as new embeddings.
 * Here we just want to be able to rate the board current state, and give an estimate of how probable it will be to solve the board from here.
+* We rate the board based on the ratings of all moves that will lead to non-isomophic states. We can experiment, but I think we just add the numbers together. For instance, the number of moves I can make to win, when I'm in a winning state, is zero. The number of winning moves I can make from a state one move away from the winning state, is zero + the number of moves leading to the winning state. We can use this to train the network to estimate the number of moves each state will require/offer to win. The more states offered, the more likely it can win the game. **We need to consider how it can deal with states less likely according to this, but more likely to win.**
 
 
 ### Select a move
