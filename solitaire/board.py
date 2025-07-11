@@ -377,9 +377,12 @@ class Board:
         return False
 
     def is_win(self) -> bool:
-        """Checks if the game is solved."""
-        # The game is won if all tableau piles have no face-down cards.
-        # An empty list for self.tableau_piles is handled correctly by all().
+        """
+        Checks if the game is solved.
+        Based on the analysis in README.md, the game is considered won if there are
+        2 or fewer hidden cards remaining, as it's assumed to be solvable from that point.
+        """
         if not self.tableau_piles:
             return False
-        return all(t.face_down_count == 0 for t in self.tableau_piles)
+        total_hidden_cards = sum(t.face_down_count for t in self.tableau_piles)
+        return total_hidden_cards <= 2

@@ -104,41 +104,50 @@ The challange is to find this category, i.e.: from a board state, find the diffe
 ##### 1 or 2 cards unrevealed
 
 *Hypothesis*:
-In **SOL2**, with only 1 or 2 cards unrevealed, we can always play **WasteToFoundation** and/or **WasteToTableau** until the waste and stock piles are empty.
+In **SOL2**, with only 1 or 2 cards unrevealed, we can always play **F(WasteToFoundation)** and/or **F(WasteToTableau)** until the waste and stock piles are empty.
 
 *Proof*:
-Let's call the top of the waste pile *W*.
-Let's use the notation (X,a) to denote a card with suite X and face value a.
-Let's say *W* is (Y,b)
-
-The requirement for **WasteToFoundation** to be a valid morphism is for the foundation pile to have (Y,b-1) as the top.
-The requirement for **WasteToTableau** is for the tableau set of cards to contain a top card (C1,b+1) or (C2,b+1) where `C1<>C2` but have the same colour, different to the colour of Y.
-`(Y,b-1) <> (C1,b+1)` since `b-1<b+1`.
-`(Y,b-1) <> (C2,b+1)` for the same reason.
-`(C1,b+1) <> (C2,b+1)` from above.
-This means we have three different cards in (Y,b-1), (C1,b+1) and (C2,b+1). Even if the two unrevealed cards are two of those, there's still a third one left, so we can play that move.
+* Let's call the top of the waste pile *W*.
+* Let's use the notation `(X,a)` to denote a card with suite `X` and face value `a`.
+* Let's say *W* is `(Y,b)`
+* The requirement for **F(WasteToFoundation)** to be a valid morphism is for the foundation pile to have `(Y,b-1)` as the top.
+* The requirement for **F(WasteToTableau)** is for the tableau set of cards to contain a top card `(C1,b+1)` or `(C2,b+1)` where `C1<>C2` but have the same colour, different to the colour of `Y`.
+* `(Y,b-1) <> (C1,b+1)` since `b-1<b+1`.
+* `(Y,b-1) <> (C2,b+1)` for the same reason.
+* `(C1,b+1) <> (C2,b+1)` from above.
+* This means we have three different cards in `(Y,b-1)`, `(C1,b+1)` and `(C2,b+1)`. Even if the two unrevealed cards are two of those, there's still a third one left, so we can play that move.
+* The edge cases are when `b=1`, i.e.: it is an ACE card. In this case, the ACE can always be moved to the Foundation pile. It'll ALWAYS be possible.
+* The only other edge case is when `b=13`, i.e.: the KING card. In this case the KING can be placed on an empty tableau location. At this point in the game, we will always be able to have an empty tableau, since we have 4 suites, and 7 locations.
 
 *Hypothesis*:
-In **SOL2**, with only 1 or 2 cards unrevealed, and both the waste and stock piles empty, the **TableauToFoundationAndReveal** or **TableauToTableauAndReveal** moves are always available.
+In **SOL2**, with only 1 or 2 cards unrevealed, and both the waste and stock piles empty, the **F(TableauToFoundationAndReveal)** or **F(TableauToTableauAndReveal)** moves are always available.
 
 *Proof*:
-The requirements for **TablauToFoundationAndReveal** are:
-* The tableau pile with the unrevealed card must have only a single revealed card left (R,a).
-* The foundation pile for suite R must have (R,a-1) as top card.
-The requirements for **TableauToTableauAndReveal** are:
-* The tableau pile with the unrevealed card must have only a single revealed card left (R,a).
-* There must be another tableau pile with (C1,a+1) or (C2,a+1) with `C1<>C2` and colour different to R.
-This means we have 3 unique options, and only 1 or 2 hidden cards. There will always be at least a third option avialable.
+* The requirements for **F(TablauToFoundationAndReveal)** are:
+  * The tableau pile with the unrevealed card must have only a single revealed card left `(R,a)`.
+  * The foundation pile for suite `R` must have `(R,a-1)` as top card.
+* The requirements for **F(TableauToTableauAndReveal)** are:
+  * The tableau pile with the unrevealed card must have only a single revealed card left `(R,a)`.
+  * There must be another tableau pile with `(C1,a+1)` or `(C2,a+1)` with `C1<>C2` and colour different to `R`.
+* This means we have 3 unique options, and only 1 or 2 hidden cards. There will always be at least a third option avialable.
 
+##### 3 or more
+
+For the proofs above, if we have three hidden cards, we can always end up with a state where all three cards are hidden. As an example:
+We have a tableau pile with 3 hearts, 3 diamonds, and ace of clubs hidden, covered by 2 of clubs. In this case we can never move the 2 of clubs to the foundation for clubs, since the ace of clubs are hidden by the same card. We will also never be able to move the 2 of clubs to another tableau pile, since both the red 3's are hidden by this card. In general, if we have `(Y,b-1)`, `(C1,b+1)` and `(C2,b+1)` hidden by `(Y,b)`, this will be unsolvable, even when we have more than just these three cards hidden.
 
 ## Training
 
 ### Rate the board
 
-* We rate boards based on *SOL2*.
-* We get a vectorisation for the board based on making progress, i.e.: all *isomophic* boards are embedded the same, only *morphisms* leading to new *non-isomophic* boards are considered as new embeddings.
-* Here we just want to be able to rate the board current state, and give an estimate of how probable it will be to solve the board from here.
-* We rate the board based on the ratings of all moves that will lead to non-isomophic states. We can experiment, but I think we just add the numbers together. For instance, the number of moves I can make to win, when I'm in a winning state, is zero. The number of winning moves I can make from a state one move away from the winning state, is zero + the number of moves leading to the winning state. We can use this to train the network to estimate the number of moves each state will require/offer to win. The more states offered, the more likely it can win the game. **We need to consider how it can deal with states less likely according to this, but more likely to win.**
+* We rate boards based on **SOL2**. All isomophic boards are rated the same.
+* All 1 or 2 hidden card boards are 100% solvable (probability of `1`).
+* A 3 hidden card board are either solvable or not (probability of `0` or `1`).
+* An x hidden card board has a likelyhood of being solvable (given we select random moves). Each **SOL2** morphism (`m1, m2, ..., mk`) will lead to a board that's got a probability of being solvable, let's call that `p1, p2, ..., pk`. So the total probability is `(p1 + p2 + ... + pk)/k`.
+* So, the probability of a board being solvable at move `i`, is the sum of the probabilities of all the boards reachable by **SOL2** morphisms, devided by the number of those morphisms.
+* We train a network for every step, i.e.: one for 4 hidden cards, one for 5 hidden cards, etc., etc.
+
+
 
 
 ### Select a move
